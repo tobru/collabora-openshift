@@ -26,4 +26,4 @@ if test "${DONT_GEN_SSL_CERT-set}" == set; then
   mv certs/ca/root.crt.pem /etc/loolwsd/ca-chain.cert.pem
 fi
 
-exec "$@"
+/usr/bin/loolwsd --version --o:sys_template_path=/opt/lool/systemplate --o:lo_template_path=/opt/collaboraoffice5.3 --o:child_root_path=/opt/lool/child-roots --o:file_server_root_path=/usr/share/loolwsd
