@@ -39,7 +39,7 @@ fi
 # Run loolwsd when asked to do so
 if [ "$1" = 'loolwsd' ]; then
   echo "===> Starting Collabora Online"
-  exec /usr/bin/loolwsd \
+  exec dumb-init /usr/bin/loolwsd \
        --version \
        --o:sys_template_path=/opt/lool/systemplate \
        --o:lo_template_path=/opt/collaboraoffice5.3 \
@@ -48,4 +48,4 @@ if [ "$1" = 'loolwsd' ]; then
 fi
 
 # Run CMD
-exec "$@"
+exec dumb-init "$@"

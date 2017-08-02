@@ -18,6 +18,8 @@ RUN mkdir /home/lool && \
 
 ADD entrypoint.sh /
 COPY scripts/ /etc/loolwsd
-ENTRYPOINT ["dumb-init", "/entrypoint.sh"]
 
+USER 997
+
+ENTRYPOINT ["/entrypoint.sh"]
 CMD ["loolwsd"]
