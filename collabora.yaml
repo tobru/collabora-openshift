@@ -1,0 +1,193 @@
+apiVersion: v1
+kind: Template
+metadata:
+  name: collabora
+  annotations:
+    description: "Collabora Online is a powerful LibreOffice-based online office that supports all major document, spreadsheet and presentation file formats, which you can integrate in your own infrastructure."
+    tags: "fileshare,collabora,libreoffice"
+    iconClass: fa-cloud-upload
+    template.openshift.io/provider-display-name: "tobrunet"
+    template.openshift.io/documentation-url: "https://github.com/tobru/collabora-openshift/blob/master/README.md"
+    template.openshift.io/support-url: "https://github.com/tobru/collabora-openshift/issues"
+parameters:
+- name: APP_URL
+  description: Application URL (Route/host)
+  required: true
+- name: IMAGE
+  description: Application Docker Image to deploy
+  value: tobru/loolwsd
+- name: IMAGE_TAG
+  description: Tag of the Application Docker Image to deploy
+  value: latest
+- name: NGINX_IMAGE
+  description: Nginx Docker Image to deploy
+  value: tobru/loolwsd-nginx
+- name: NGINX_IMAGE_TAG
+  description: Tag of the Nginx Docker Image to deploy
+  value: latest
+objects:
+- apiVersion: v1
+  kind: ImageStream
+  metadata:
+    labels:
+      app: collabora
+    name: collabora
+  spec:
+    tags:
+    - annotations:
+        openshift.io/imported-from: ${IMAGE}:${IMAGE_TAG}
+      from:
+        kind: DockerImage
+        name: ${IMAGE}:${IMAGE_TAG}
+      importPolicy:
+        scheduled: true
+      name: ${IMAGE_TAG}
+      referencePolicy:
+        type: Source
+- apiVersion: v1
+  kind: ImageStream
+  metadata:
+    labels:
+      app: collabora
+    name: nginx
+  spec:
+    tags:
+    - annotations:
+        openshift.io/imported-from: ${NGINX_IMAGE}:${NGINX_IMAGE_TAG}
+      from:
+        kind: DockerImage
+        name: ${NGINX_IMAGE}:${NGINX_IMAGE_TAG}
+      importPolicy:
+        scheduled: true
+      name: ${NGINX_IMAGE_TAG}
+      referencePolicy:
+        type: Source
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    labels:
+      app: collabora
+    name: collabora
+  spec:
+    replicas: 1
+    selector:
+      app: collabora
+      deploymentconfig: collabora
+    strategy:
+      activeDeadlineSeconds: 21600
+      resources: {}
+      rollingParams:
+        intervalSeconds: 1
+        maxSurge: 25%
+        maxUnavailable: 25%
+        timeoutSeconds: 600
+        updatePeriodSeconds: 1
+      type: Rolling
+    template:
+      metadata:
+        labels:
+          app: collabora
+          deploymentconfig: collabora
+      spec:
+        containers:
+        - image: collabora
+          imagePullPolicy: Always
+          livenessProbe:
+            failureThreshold: 3
+            initialDelaySeconds: 1
+            periodSeconds: 10
+            successThreshold: 1
+            tcpSocket:
+              port: 9980
+            timeoutSeconds: 5
+          name: collabora
+          ports:
+          - containerPort: 9980
+            protocol: TCP
+          readinessProbe:
+            failureThreshold: 3
+            initialDelaySeconds: 1
+            periodSeconds: 10
+            successThreshold: 1
+            tcpSocket:
+              port: 9980
+            timeoutSeconds: 5
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+        - image: nginx
+          imagePullPolicy: Always
+          livenessProbe:
+            failureThreshold: 3
+            initialDelaySeconds: 1
+            periodSeconds: 10
+            successThreshold: 1
+            tcpSocket:
+              port: 8080
+            timeoutSeconds: 1
+          name: nginx
+          ports:
+          - containerPort: 8080
+            protocol: TCP
+          readinessProbe:
+            failureThreshold: 3
+            initialDelaySeconds: 1
+            periodSeconds: 10
+            successThreshold: 1
+            tcpSocket:
+              port: 8080
+            timeoutSeconds: 1
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+    test: false
+    triggers:
+    - imageChangeParams:
+        automatic: true
+        containerNames:
+        - collabora
+        from:
+          kind: ImageStreamTag
+          name: collabora:${IMAGE_TAG}
+      type: ImageChange
+    - imageChangeParams:
+        automatic: true
+        containerNames:
+        - nginx
+        from:
+          kind: ImageStreamTag
+          name: nginx:${NGINX_IMAGE_TAG}
+      type: ImageChange
+    - type: ConfigChange
+- apiVersion: v1
+  kind: Service
+  metadata:
+    labels:
+      app: collabora
+    name: collabora
+  spec:
+    ports:
+    - name: 8080-tcp
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+    selector:
+      app: collabora
+      deploymentconfig: collabora
+    sessionAffinity: None
+    type: ClusterIP
+- apiVersion: v1
+  kind: Route
+  metadata:
+    name: collabora
+  spec:
+    host: ${APP_URL}
+    port:
+      targetPort: 8080-tcp
+    to:
+      kind: Service
+      name: collabora
+      weight: 100
+    wildcardPolicy: None
