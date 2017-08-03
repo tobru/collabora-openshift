@@ -1,8 +1,4 @@
 #!/bin/bash
-
-# Create passwd file for nss_wrapper
-source /etc/loolwsd/generate_container_user
-
 set -e
 
 # TODO replace this with a cleaner implementation
@@ -39,7 +35,7 @@ fi
 # Run loolwsd when asked to do so
 if [ "$1" = 'loolwsd' ]; then
   echo "===> Starting Collabora Online"
-  exec dumb-init /usr/bin/loolwsd \
+  exec /usr/bin/loolwsd \
        --version \
        --o:sys_template_path=/opt/lool/systemplate \
        --o:lo_template_path=/opt/collaboraoffice5.3 \
@@ -48,4 +44,4 @@ if [ "$1" = 'loolwsd' ]; then
 fi
 
 # Run CMD
-exec dumb-init "$@"
+exec "$@"
