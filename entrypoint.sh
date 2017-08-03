@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e
 
+export HOME=/home/lool
+
 # TODO replace this with a cleaner implementation
 if test "${DONT_GEN_SSL_CERT-set}" == set; then
 
