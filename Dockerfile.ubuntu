@@ -1,0 +1,42 @@
+FROM ubuntu:16.04
+
+ENV domain localhost
+ENV LC_CTYPE en_US.UTF-8
+ENV DEBIAN_FRONTEND noninteractive
+
+# Install Collabora, libmapuid and dumb-init
+
+RUN apt-get update && apt-get -y install --no-install-recommends \
+      ca-certificates \
+      apt-transport-https \
+      wget \
+      openssl \
+      locales-all \
+      hyphen-* && \
+    echo "deb https://collaboraoffice.com/repos/CollaboraOnline/CODE /" > /etc/apt/sources.list.d/collabora.list && \
+    apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 6CCEA47B2281732DF5D504D00C54D189F4BA284D && \
+    apt-get update && \
+    apt-get -y install --no-install-recommends loolwsd code-brand && \
+    apt-get clean && rm -rf /var/lib/apt/lists/* && \
+    # dumb-init
+    wget -O /usr/local/sbin/dumb-init https://github.com/Yelp/dumb-init/releases/download/v1.2.0/dumb-init_1.2.0_amd64 && \
+    chmod +x /usr/local/sbin/dumb-init && \
+    # libmapuid
+    wget -O /usr/local/lib/libmapuid.so https://raw.githubusercontent.com/appuio/libmapuid/master/lib/libmapuid.so && \
+    chmod 755 /usr/local/lib/libmapuid.so && \
+    echo "/usr/local/lib/libmapuid.so" > /etc/ld.so.preload
+
+# Setup directories and permissions - prepare for libmapuid
+RUN usermod -u 1001 lool && \
+    mkdir /home/lool && \
+    directories="/home/lool /etc/loolwsd /var/cache/loolwsd /opt/lool" && \
+    chown -R lool:root $directories && \
+    chmod -R g+rwX $directories
+
+ADD entrypoint.sh /
+COPY loolwsd.xml /etc/loolwsd/loolwsd.xml
+
+USER 1001
+
+ENTRYPOINT ["dumb-init", "/entrypoint.sh"]
+CMD ["loolwsd"]

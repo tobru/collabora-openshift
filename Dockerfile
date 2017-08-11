@@ -22,6 +22,7 @@ RUN usermod -u 1001 lool && \
     chmod -R g+rwX $directories
 
 ADD entrypoint.sh /
+COPY loolwsd.xml /etc/loolwsd/loolwsd.xml
 
 USER 1001
 
